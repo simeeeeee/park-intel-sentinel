@@ -1,4 +1,4 @@
-# :robot: Project ParkIntelBot
+# :robot: Project Park Intel Sentinel
 
 > **자동 주차장 감시 경비봇 시스템**  
 ParkIntelBot은 자동차 경비 로봇이 주차장을 순찰하며 차량 번호판을 자동 인식하고, 등록 차량 여부를 실시간으로 판단하여 미등록 차량 발견 시 관리자에게 알림을 전송하는 **지능형 감시 시스템**입니다.  
