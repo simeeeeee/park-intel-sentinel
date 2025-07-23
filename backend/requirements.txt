@@ -1,0 +1,7 @@
+# FastAPI 프레임워크
+fastapi
+uvicorn[standard]
+
+# 요청 처리 및 이미지 수신
+python-multipart  # 파일 업로드 처리
+Pillow            # 이미지 저장 및 처리용

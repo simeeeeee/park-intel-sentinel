@@ -1,0 +1,16 @@
+# AI 및 이미지 처리
+torch>=2.0
+torchvision>=0.15
+opencv-python-headless
+numpy
+Pillow
+
+# 서버 통신
+requests
+
+# 라즈베리파이 센서 제어
+gpiozero
+#RPi.GPIO
+
+# 로깅
+loguru
