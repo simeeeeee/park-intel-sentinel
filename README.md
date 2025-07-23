@@ -11,7 +11,7 @@ ParkIntelBot은 자동차 경비 로봇이 주차장을 순찰하며 차량 번�
 시스템 구성은 아래와 같습니다:
 
 ```
-[CarBot (Raspberry Pi)] ---> [번호판 인식 (YOLO + OCR)] ---> [ParkIntelBot API 서버]
+[CarBot (Raspberry Pi)] ---> [번호판 영역 crop + 이미지 전송] ---> [ParkIntelBot API 서버]
                                                                      ↓
                                                            [DB: 등록 차량 정보 + 장애인 차량 여부]
                                                                      ↓
@@ -31,7 +31,7 @@ ParkIntelBot은 자동차 경비 로봇이 주차장을 순찰하며 차량 번�
 ## 🔗 Clone code
 
 ```bash
-git clone https://github.com/xxx/yyy/zzz
+git clone https://github.com/simeeeeee/park-intel-sentinel.git
 ```
 
 ---
@@ -56,7 +56,7 @@ pip install -r requirements.txt
 ## 🛠 Steps to build
 
 ```bash
-cd ~/parkintelbot
+cd ~/park-intel-sentinel
 source .venv/bin/activate
 
 make
@@ -68,11 +68,11 @@ make install
 ## ▶️ Steps to run
 
 ```bash
-cd ~/parkintelbot
+cd ~/park-intel-sentinel
 source .venv/bin/activate
 
 # 데모 실행 예시
-cd /path/to/repo/parkintelbot/
+cd /path/to/repo/park-intel-sentinel/
 python demo.py -i input_video.mp4 -m yolov8n.pt -d config.yaml
 ```
 
@@ -81,7 +81,7 @@ python demo.py -i input_video.mp4 -m yolov8n.pt -d config.yaml
 
 ### 🧪 개발 환경 (Raspberry Pi 실기기 포함)
 
-> Pi 장비에서 이미지 , 나머지는 로컬 또는 EC2에서 Edge 추론 실행
+> Pi 장비에서 번호판 영역 crop + 이미지 전송, 나머지는 로컬 또는 EC2에서 AI추론 및 로직 실행
 
 #### ✅ 백엔드/프론트 도커 실행
 
@@ -99,7 +99,7 @@ ssh pi@<RPI_IP> 'bash -s' < ./deploy_edge.sh
 또는 직접 실행:
 
 ```bash
-cd ~/trunkai/edge
+cd ~/park-intel-sentinel/edge
 git pull origin main
 source venv/bin/activate
 python3 run.py
