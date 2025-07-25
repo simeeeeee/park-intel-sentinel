@@ -1,0 +1,71 @@
+name: Test and Deploy to Server
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'edge/**'
+
+jobs:
+  test-backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout backend
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install backend dependencies and run tests
+        run: |
+          cd backend
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m pytest tests
+
+  test-edge:
+    name: Edge Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout edge
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install edge dependencies and run tests
+        run: |
+          cd edge
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m pytest tests
+
+  deploy:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+    needs: [test-backend, test-edge]  # ✅ 둘 다 통과해야 실행됨
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/workspace/park-intel-sentinel
+            git pull origin main
+            cd infra
+            docker compose down
+            docker compose up --build -d
