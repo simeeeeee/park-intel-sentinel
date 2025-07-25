@@ -64,8 +64,9 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd ~/workspace/park-intel-sentinel
+            cd /home/team01/workspace/PIS/park-intel-sentinel
             git pull origin main
             cd infra
             docker compose down
             docker compose up --build -d
+
