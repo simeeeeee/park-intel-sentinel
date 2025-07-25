@@ -17,3 +17,12 @@ async def test_health_check():
         response = await ac.get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+
+@pytest.mark.asyncio
+async def test_ping():
+    transport = ASGITransport(app=app)  # ✅ 여기서 app을 transport로 감쌌고
+    async with LifespanManager(app):    # ✅ lifespan 실행
+        async with AsyncClient(transport=transport, base_url="http://test") as ac:  # ✅ 핵심 수정
+            response = await ac.get("/api/ping")
+    assert response.status_code == 200
+    assert response.json() == {"message": "pong"}
