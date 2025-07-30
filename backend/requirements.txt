@@ -1,6 +1,7 @@
 # FastAPI 프레임워크
 fastapi
 uvicorn[standard]
+mysql-connector-python
 
 httpx
 pytest
