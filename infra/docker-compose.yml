@@ -19,6 +19,10 @@ services:
     container_name: backend
     expose:
       - "8000"
+    volumes:
+      - ../backend:/app
+    env_file:
+      - .env
     restart: always
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
