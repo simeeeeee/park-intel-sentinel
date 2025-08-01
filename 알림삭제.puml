@@ -1,0 +1,7 @@
+@startuml
+-> WebAPI: delete_violation
+DBBroker -> Database: query
+Database --> DBBroker: delete_response
+WebAPI -> DBBroker: deleteViolation(violation_id)
+DBBroker --> WebAPI: delete_violation_response
+@enduml

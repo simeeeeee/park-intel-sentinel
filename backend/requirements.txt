@@ -2,6 +2,9 @@
 fastapi
 uvicorn[standard]
 mysql-connector-python
+pydantic
+aiomysql
+databases
 
 httpx
 pytest
