@@ -21,6 +21,7 @@ services:
       - "8000"
     volumes:
       - ../backend:/app
+      - ../infra/.env:/app/infra/.env  # 이 라인 추가
     env_file:
       - .env
     depends_on:
@@ -47,11 +48,11 @@ services:
       volumes:
         - db_data:/var/lib/mysql
       restart: always
-      healthcheck: 
+      healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 3
 
 
 volumes:
