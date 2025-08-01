@@ -4,17 +4,17 @@ import os
 # ✅ 1. PYTHONPATH 설정
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-# ✅ 2. .env 로드: 반드시 import 전에! 도커컨테이너 내부 기준
+# ✅ 2. .env 로드
 from dotenv import load_dotenv
-load_dotenv(dotenv_path="/app/.env")  # 절대 경로로 명시
+load_dotenv(dotenv_path="/app/.env")
 
-# 이후 import는 여기에
+# ✅ 3. 핵심 모듈 import
 import pytest
+from unittest.mock import AsyncMock, patch
 from httpx import AsyncClient
 from asgi_lifespan import LifespanManager
-from httpx import ASGITransport 
+from httpx import ASGITransport
 from app.main import app
-
 
 
 @pytest.mark.asyncio
@@ -25,11 +25,14 @@ async def test_health_check():
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
 
+
 @pytest.mark.asyncio
-async def test_ping():
-    transport = ASGITransport(app=app)  # ✅ 여기서 app을 transport로 감쌌고
-    async with LifespanManager(app):    # ✅ lifespan 실행
-        async with AsyncClient(transport=transport, base_url="http://test") as ac:  # ✅ 핵심 수정
+@patch("app.main.database.connect", new_callable=AsyncMock)
+@patch("app.main.database.disconnect", new_callable=AsyncMock)
+async def test_ping(mock_disconnect, mock_connect):
+    transport = ASGITransport(app=app)
+    async with LifespanManager(app):  # ✅ lifespan 실행 → DB 연결은 mock됨
+        async with AsyncClient(transport=transport, base_url="http://test") as ac:
             response = await ac.get("/api/ping")
     assert response.status_code == 200
     assert response.json() == {"message": "pong"}
