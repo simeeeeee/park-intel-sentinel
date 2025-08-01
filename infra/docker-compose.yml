@@ -21,9 +21,12 @@ services:
       - "8000"
     volumes:
       - ../backend:/app
-      - ../infra/.env:/app/infra/.env:ro
-    env_file:
-      - .env
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
     depends_on:
       db:
         condition: service_healthy

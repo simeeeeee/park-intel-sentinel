@@ -6,7 +6,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # ✅ 2. .env 로드: 반드시 import 전에! 도커컨테이너 내부 기준
 from dotenv import load_dotenv
-load_dotenv(dotenv_path="/app/infra/.env")  # 절대 경로로 명시
+load_dotenv(dotenv_path="/app/.env")  # 절대 경로로 명시
 
 # 이후 import는 여기에
 import pytest
