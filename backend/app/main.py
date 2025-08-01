@@ -1,8 +1,8 @@
 import os
 from dotenv import load_dotenv
 
-dotenv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'infra', '.env'))
-load_dotenv(dotenv_path=dotenv_path, override=True)
+# 도커 컨테이너 내부
+load_dotenv(dotenv_path="/app/infra/.env")  # 절대 경로로 명시
 
 from fastapi import FastAPI
 from app.db.connection import database
