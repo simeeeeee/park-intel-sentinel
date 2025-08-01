@@ -33,4 +33,3 @@ async def shutdown():
 
 # 라우터 등록
 app.include_router(robot.router, prefix="/api/robot", tags=["Robot"])
-
