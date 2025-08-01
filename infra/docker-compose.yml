@@ -21,7 +21,7 @@ services:
       - "8000"
     volumes:
       - ../backend:/app
-      - ../infra/.env:/app/infra/.env  # 이 라인 추가
+      - ../infra/.env:/app/infra/.env:ro
     env_file:
       - .env
     depends_on:
