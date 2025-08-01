@@ -82,4 +82,4 @@ async def fetch_robot_log(robot_id: int):
         ORDER BY created_at DESC
         LIMIT 1
     """
-    await database.fetch_one(query, {"robot_id": robot_id})
+    return await database.fetch_one(query, {"robot_id": robot_id})
