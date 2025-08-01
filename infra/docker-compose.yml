@@ -23,6 +23,9 @@ services:
       - ../backend:/app
     env_file:
       - .env
+    depends_on:
+      db:
+        condition: service_healthy
     restart: always
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -44,6 +47,11 @@ services:
       volumes:
         - db_data:/var/lib/mysql
       restart: always
+      healthcheck: 
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 
 volumes:
