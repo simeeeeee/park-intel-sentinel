@@ -88,3 +88,23 @@ async def process_robot_status(request: RobotStatusRequest):
 
             
     return {"processed_count": len(vehicles)}
+
+
+
+async def get_robot_position(id: int):
+    # 로봇 위치 조회 로직
+    try:
+        async with database.transaction():
+            # robot_id기반으로 robot_logs에서 가장 최근의 log를 가져옴
+            log = await fetch_robot_log(id)
+            if log is None:
+                return {"robot_id": id, "rfid_tag": None, "message": "No log found"}
+
+            return {
+                "rfid_tag": log["rfid_tag"],
+                "created_at": log["created_at"].isoformat()
+            }
+            
+    except Exception as e:
+            logger.error(f"Error robot_position {robot_id}: {e}")
+
