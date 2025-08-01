@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Optional
 from pydantic import BaseModel
 
 class VehicleInfo(BaseModel):
