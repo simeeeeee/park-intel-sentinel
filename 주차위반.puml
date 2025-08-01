@@ -1,0 +1,8 @@
+@startuml
+-> WebAPI: violation_list
+DBBroker -> Database: query
+Database --> DBBroker: violation_list
+WebAPI -> DBBroker: getViolationList(from_time, to_time)
+DBBroker --> WebAPI: violation_list_response
+WebAPI -> WebUI: updateViolationList(violation_list)
+@enduml

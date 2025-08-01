@@ -1,0 +1,38 @@
+version: "3.9"
+
+services:
+  backend:
+    build: ../backend
+    container_name: backend-local
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../backend:/app
+    env_file:
+      - .env.local
+    restart: unless-stopped
+    depends_on:
+      - db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  db:
+    image: mariadb:11
+    container_name: mariadb-local
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+    ports:
+      - "3306:3306"  # 로컬에서도 접속 가능
+    volumes:
+      - db_data_local:/var/lib/mysql
+    restart: unless-stopped
+
+volumes:
+  db_data_local:
