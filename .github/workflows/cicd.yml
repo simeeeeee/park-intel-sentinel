@@ -9,6 +9,7 @@ on:
 
 jobs:
   test-backend:
+    name: Backend Tests
     runs-on: ubuntu-latest
     services:
       mysql:
