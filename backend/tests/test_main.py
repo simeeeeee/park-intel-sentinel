@@ -4,10 +4,14 @@ import pytest
 from httpx import AsyncClient
 from asgi_lifespan import LifespanManager  # ✅ FastAPI의 lifespan 테스트 지원
 from httpx import ASGITransport 
+from app.main import app  # FastAPI 앱 불러오기
+
+from dotenv import load_dotenv
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../.env"))
 
 # backend 디렉토리를 PYTHONPATH에 추가
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from app.main import app  # FastAPI 앱 불러오기
+
 
 
 @pytest.mark.asyncio
