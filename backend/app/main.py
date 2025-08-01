@@ -1,3 +1,9 @@
+import os
+from dotenv import load_dotenv
+
+dotenv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'infra', '.env'))
+load_dotenv(dotenv_path=dotenv_path, override=True)
+
 from fastapi import FastAPI
 from app.db.connection import database
 from app.api import robot
@@ -7,6 +13,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 )
+
 
 
 app = FastAPI()
