@@ -62,13 +62,24 @@ async def save_alert_log(zone_id: int, plate_text: str, reason: str):
     })
 
 # robot_log 저장
-async def save_robot_log(zone_id: int, rfid_tag: str, plate_text: str):
+async def save_robot_log(zone_id: int, robot_id: int, rfid_tag: str, plate_text: str):
     query = """
-        INSERT INTO robot_logs (zone_id, rfid_tag, plate_text, created_at)
-        VALUES (:zone_id, :rfid_tag, :plate_text, CURRENT_TIMESTAMP)
+        INSERT INTO robot_logs (zone_id, robot_id, rfid_tag, plate_text, created_at)
+        VALUES (:zone_id, :robot_id, :rfid_tag, :plate_text, CURRENT_TIMESTAMP)
     """
     await database.execute(query, {
         "zone_id": zone_id,
         "rfid_tag": rfid_tag,
         "plate_text": plate_text
     })
+
+
+async def fetch_robot_log(robot_id: int):
+    query = """
+        SELECT *
+        FROM robot_logs
+        WHERE robot_id = :robot_id
+        ORDER BY created_at DESC
+        LIMIT 1
+    """
+    await database.fetch_one(query, {"robot_id": robot_id})
