@@ -5,6 +5,7 @@ mysql-connector-python
 pydantic
 aiomysql
 databases
+python-dotenv
 
 httpx
 pytest

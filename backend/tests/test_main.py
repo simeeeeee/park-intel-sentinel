@@ -1,16 +1,19 @@
 import sys
 import os
+
+# ✅ 1. PYTHONPATH 설정
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+# ✅ 2. .env 로드: 반드시 import 전에!
+from dotenv import load_dotenv
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../../infra/.env'))
+
+# 이후 import는 여기에
 import pytest
 from httpx import AsyncClient
-from asgi_lifespan import LifespanManager  # ✅ FastAPI의 lifespan 테스트 지원
+from asgi_lifespan import LifespanManager
 from httpx import ASGITransport 
-from app.main import app  # FastAPI 앱 불러오기
-
-from dotenv import load_dotenv
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../.env"))
-
-# backend 디렉토리를 PYTHONPATH에 추가
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from app.main import app
 
 
 
