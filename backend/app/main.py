@@ -1,9 +1,4 @@
 import os
-from dotenv import load_dotenv
-
-# 도커 컨테이너 내부
-load_dotenv(dotenv_path="/app/.env")  # 절대 경로로 명시
-
 from fastapi import FastAPI
 from app.db.connection import database
 from app.api import robot

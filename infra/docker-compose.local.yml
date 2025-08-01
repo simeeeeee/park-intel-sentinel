@@ -8,7 +8,7 @@ services:
       - "8000:8000"
     volumes:
       - ../backend:/app
-      - ../infra/.env:/app/infra/.env.local  # backend 컨테이너내에 환경변수 주입
+      - ../infra/.env:/app/infra/.env:ro
     env_file:
       - .env.local
     restart: unless-stopped
