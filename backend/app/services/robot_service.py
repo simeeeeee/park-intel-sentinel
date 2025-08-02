@@ -1,5 +1,4 @@
 from app.models.robot import RobotStatusRequest
-# from app.queries import robot_queries
 from app.queries.robot_queries import *
 from app.db.connection import database
 import logging

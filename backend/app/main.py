@@ -2,6 +2,7 @@ import os
 from fastapi import FastAPI
 from app.db.connection import database
 from app.api import robot
+from app.api import notification
 import logging
 
 logging.basicConfig(
@@ -33,3 +34,4 @@ async def shutdown():
 
 # 라우터 등록
 app.include_router(robot.router, prefix="/api/robot", tags=["Robot"])
+app.include_router(notification.router, prefix="/api/notification", tags=["Notification"])
