@@ -23,7 +23,7 @@ ParkIntelBot은 주차장 경비 로봇이 주차장을 순찰하며 차량 번�
 
 시스템 구성은 아래와 같습니다:
 
-![./PISDiagram.jpg](./PISDiagram.jpg)
+![./Park-Intel-Sentinal.png](./Park-Intel-Sentinal.png)
 
 ---
 
