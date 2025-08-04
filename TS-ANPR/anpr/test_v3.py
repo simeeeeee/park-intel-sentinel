@@ -1,0 +1,129 @@
+import sys
+import platform
+import os
+import cv2
+import numpy as np
+import ctypes
+import json
+import logging
+from tsanpr.tsanpr import TSANPR
+
+# 로그 설정
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(asctime)s] %(levelname)s - %(message)s',
+    datefmt='%H:%M:%S'
+)
+
+EXAMPLES_BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+
+def get_engine_file_name():
+    arch = platform.machine()
+    if sys.platform.startswith("win"):
+        if arch in ("AMD64", "x86_64"):
+            return os.path.join(EXAMPLES_BASE_DIR, "bin/windows-x86_64/tsanpr.dll")
+        elif arch in ("x86", "i386"):
+            return os.path.join(EXAMPLES_BASE_DIR, "bin/windows-x86/tsanpr.dll")
+    elif sys.platform.startswith("linux"):
+        if arch in ("x86_64", "amd64"):
+            return os.path.join(EXAMPLES_BASE_DIR, "bin/linux-x86_64/libtsanpr.so")
+        elif arch == "aarch64":
+            return os.path.join(EXAMPLES_BASE_DIR, "bin/linux-aarch64/libtsanpr.so")
+    return ""
+
+def get_pixel_format(img):
+    channels = 1 if len(img.shape) == 2 else img.shape[2]
+    if channels == 1:
+        return "GRAY"
+    elif channels == 2:
+        return "BGR565"
+    elif channels == 3:
+        return "BGR"
+    elif channels == 4:
+        return "BGRA"
+    else:
+        return None
+
+def webcam_license_plate_recognition(tsanpr, country_code="KR"):
+    error = tsanpr.anpr_initialize(f"json;country={country_code};multi=true;func=msdr")
+    if error:
+        logging.error(f"anpr_initialize() 실패: {error}")
+        return
+
+    cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        logging.error("카메라 장치를 열 수 없습니다.")
+        return
+
+    logging.info("웹캠 번호판 인식 시작 (ESC 누르면 종료)")
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            logging.error("카메라 프레임 읽기 실패")
+            break
+
+        height, width = frame.shape[:2]
+        stride = frame.strides[0]
+        pixel_format = get_pixel_format(frame)
+        if pixel_format is None:
+            logging.error("알 수 없는 픽셀 포맷")
+            break
+
+        img_ptr = frame.ctypes.data_as(ctypes.c_void_p)
+
+        try:
+            result_json = tsanpr.anpr_read_pixels(
+                img_ptr, width, height, stride, pixel_format, "json", "m"
+            )
+        except Exception as e:
+            logging.error(f"ANPR 처리 오류: {e}")
+            continue
+
+        if result_json:
+            try:
+                plates = json.loads(result_json)
+                logging.info(f"번호판 {len(plates)}개 인식됨")
+
+                plates.sort(
+                    key=lambda p: p.get("area", {}).get("width", 0) * p.get("area", {}).get("height", 0),
+                    reverse=True
+                )
+                plates = plates[:4]
+
+                for plate in plates:
+                    text = plate.get("text", "")
+                    is_ev = plate.get("ev", False)
+                    confidence = plate.get("confidence", None)
+                    ev_str = "EV" if is_ev else "일반"
+
+                    if confidence is not None:
+                        logging.info(f"번호판: {text} | EV 여부: {ev_str} | 정확도: {confidence:.4f}")
+                    else:
+                        logging.info(f"번호판: {text} | EV 여부: {ev_str}")
+
+            except Exception as e:
+                logging.error(f"JSON 파싱 오류: {e}")
+
+        if cv2.waitKey(1) == 27:  # ESC 키
+            logging.info("ESC 입력 감지. 종료합니다.")
+            break
+
+    cap.release()
+
+def main():
+    engine_file_name = get_engine_file_name()
+    if not engine_file_name or not os.path.exists(engine_file_name):
+        logging.error("지원하지 않는 운영체제이거나 엔진 파일을 찾을 수 없습니다.")
+        return
+
+    try:
+        tsanpr = TSANPR(engine_file_name)
+    except Exception as e:
+        logging.error(f"TSANPR 초기화 실패: {e}")
+        return
+
+    webcam_license_plate_recognition(tsanpr, country_code="KR")
+
+if __name__ == "__main__":
+    main()
