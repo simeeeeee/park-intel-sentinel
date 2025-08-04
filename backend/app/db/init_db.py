@@ -106,6 +106,7 @@ TABLES['alert_logs'] = (
     "  zone_id BIGINT,"
     "  plate_text VARCHAR(50),"
     "  reason TEXT,"
+    "  is_checked BOOLEAN DEFAULT FALSE,"
     "  created_at DATETIME,"
     "  updated_at DATETIME,"
     "  deleted_at DATETIME,"
@@ -218,13 +219,13 @@ def insert_dummy_data():
 
     # zone_type 그룹별 지정 (4건씩)
     zone_type_map = {
-        0: ["EV", "EV", "NORMAL", "NORMAL"],
-        1: ["EV", "EV", "NORMAL", "NORMAL"],
+        0: ["NORMAL", "NORMAL","DISABLED", "DISABLED"],
+        1: ["NORMAL", "NORMAL","DISABLED", "DISABLED"],
         2: ["NONE", "NONE", "NONE", "NONE"],
         3: ["NONE", "NONE", "NONE", "NONE"],
-        4: ["DISABLED", "DISABLED", "NORMAL", "NORMAL"],
-        5: ["DISABLED", "DISABLED", "NORMAL", "NORMAL"],
-        6: ["NONE", "NONE", "NONE", "NONE"],
+        4: ["NORMAL", "NORMAL","EV", "EV"],
+        5: ["NORMAL", "NORMAL","EV", "EV"],
+        6: ["NONE", "NONE", "NONE", "NONE"]
     }
 
     for i in range(1, 29):

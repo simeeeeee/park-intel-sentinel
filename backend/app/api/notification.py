@@ -29,3 +29,11 @@ async def delete_alert(id: int):
         return {"result": "success", "data": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@router.get("/detail")
+async def notification_detail(id: int):
+    try:
+        result = await get_notification_detail(id)
+        return {"result": "success", "data": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

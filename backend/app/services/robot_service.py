@@ -2,6 +2,7 @@ from app.models.robot import RobotStatusRequest
 from app.queries.robot_queries import *
 from app.db.connection import database
 import logging
+from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)  # INFO 이상 출력
@@ -25,8 +26,12 @@ async def process_robot_status(request: RobotStatusRequest):
     for key, vehicle in vehicles.items():
         try:
             async with database.transaction():
+                if not vehicle.text:
+                    logger.info(f"Vehicle text is empty for key={key}, skipping")
+                    continue
                 # parking_zones 테이블에서 zone_id 조회 (key, rfid 기준)
                 zone_id = await fetch_zone_id(rfid, key)  # DB 조회 함수
+                logger.info(f"Zone for rfid={rfid}, key={key}")
                 if zone_id is None:
                     # raise ValueError("존재하지 않는 zone입니다.")
                     logger.info(f"Zone not found for rfid={rfid}, key={key}")
@@ -77,8 +82,11 @@ async def process_robot_status(request: RobotStatusRequest):
                 # robot_logs 테이블에 로그 저장
                 # robot_id 없다면 default로 1로 설정
                 if robot_id is None:
+                    logger.info(f"robot_id is None, setting to default 1")
                     robot_id = 1
-                    
+                
+                
+                logger.info(f"save_robot_log({zone_id}, {robot_id}, {rfid}, {vehicle.text})")
                 await save_robot_log(zone_id=zone_id, robot_id=robot_id, rfid_tag=rfid, plate_text=vehicle.text)
                 logger.info(f"robot_logs 저장 {key}, {vehicle}")
                 
@@ -96,14 +104,22 @@ async def get_robot_position(id: int):
         async with database.transaction():
             # robot_id기반으로 robot_logs에서 가장 최근의 log를 가져옴
             log = await fetch_robot_log(id)
+            
+            
             if log is None:
                 return {"robot_id": id, "rfid_tag": None, "message": "No log found"}
+            
+            logger.info(f"robot_logs 조회 {datetime.now()}, 차이 {datetime.now() - timedelta(minutes=1)}")
+            if log["created_at"] < (datetime.now() - timedelta(minutes=1)):
+                return {"robot_id": id, "rfid_tag": None, "message": "Robot is inactive for more than 1 minute"}
 
             return {
+                "robot_id": id,
                 "rfid_tag": log["rfid_tag"],
+                "floor": log["floor"],
                 "created_at": log["created_at"].isoformat()
             }
             
     except Exception as e:
-            logger.error(f"Error robot_position {robot_id}: {e}")
+            logger.error(f"Error robot_position {id}: {e}")
 

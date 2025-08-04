@@ -76,10 +76,14 @@ async def save_robot_log(zone_id: int, robot_id: int, rfid_tag: str, plate_text:
 
 async def fetch_robot_log(robot_id: int):
     query = """
-        SELECT *
+        SELECT
+        robot_logs.rfid_tag,
+        robots.floor,
+        robot_logs.created_at
         FROM robot_logs
-        WHERE robot_id = :robot_id
-        ORDER BY created_at DESC
+        LEFT JOIN robots ON robot_logs.robot_id = robots.id
+        WHERE robots.id = :robot_id AND robot_logs.deleted_at IS NULL
+        ORDER BY robot_logs.created_at DESC
         LIMIT 1
     """
     return await database.fetch_one(query, {"robot_id": robot_id})

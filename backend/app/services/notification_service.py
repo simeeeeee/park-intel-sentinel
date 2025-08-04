@@ -15,6 +15,17 @@ async def get_notification_list(order: Optional[str] = None):
     except Exception as e:
             logger.error(f"Error notification_list : {e}")
     
+async def get_notification_detail(id: int):
+    try:
+        # 알림 상세 조회
+        result = await fetch_alert_log(id)
+        
+        # is_checked 상태를 True로 업데이트
+        await update_alert_log_checked(id)
+        return {"data": result}
+    except Exception as e:
+            logger.error(f"Error recent_notification_list : {e}")
+            
 async def get_recent_notification_list(order: Optional[str] = None):
     try:
         #최근 알림 조회(asc: 오름차순/ desc: 내림차순)
