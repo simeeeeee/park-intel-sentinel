@@ -3,9 +3,9 @@ from pydantic import BaseModel
 
 class VehicleInfo(BaseModel):
     text: str
-    ev: str
+    ev: Optional[str] = None  
 
 class RobotStatusRequest(BaseModel):
-    robot_id: Optional[int] = None  # 있어도 되고 없어도 됨
+    robot_id: Optional[int] = None 
     rfid: str
-    vehicles: Dict[str, VehicleInfo]  # 1, 2, 3, ... 키가 string
+    vehicles: Dict[str, Optional[VehicleInfo]]  #ZONE1, ZONE2 등
