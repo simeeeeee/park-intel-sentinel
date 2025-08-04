@@ -109,7 +109,8 @@ async def get_robot_position(id: int):
             if log is None:
                 return {"robot_id": id, "rfid_tag": None, "message": "No log found"}
             
-            if log["created_at"] > (datetime.now() - timedelta(minutes=1)):
+            logger.info(f"robot_logs 조회 {datetime.now()}, 차이 {datetime.now() - timedelta(minutes=1)}")
+            if log["created_at"] < (datetime.now() - timedelta(minutes=1)):
                 return {"robot_id": id, "rfid_tag": None, "message": "Robot is inactive for more than 1 minute"}
 
             return {
