@@ -76,7 +76,7 @@ async def fetch_alert_log(id:int):
         AND parking_zones.deleted_at IS NULL
         AND is_checked = FALSE
     """
-    return await database.fetch_one(query, {"id": id})\
+    return await database.fetch_one(query, {"id": id})
         
 # 알림 is_checked 상태 업데이트
 async def update_alert_log_checked(id: int):
