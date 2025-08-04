@@ -130,67 +130,133 @@ def insert_dummy_data():
     conn = get_connection()
     cursor = conn.cursor()
 
-    # 1. car_owners
-    for i in range(1, 21):
-        cursor.execute(
-            "INSERT INTO car_owners (id, name, phone_number, created_at) VALUES (%s, %s, %s, %s)",
-            (i, f"Owner{i}", f"010-1234-{1000+i}", now)
-        )
 
+    now = datetime.now()
+
+    # 1. car_owners
+    dummy_data_1 = [
+        (1, "김영철", "010-1234-1001", now),
+        (2, "이민정", "010-1234-1002", now),
+        (3, "박지훈", "010-1234-1003", now),
+        (4, "최수연", "010-1234-1004", now),
+        (5, "정우성", "010-1234-1005", now),
+        (6, "한지민", "010-1234-1006", now),
+        (7, "조인성", "010-1234-1007", now),
+        (8, "서예진", "010-1234-1008", now),
+        (9, "강동원", "010-1234-1009", now),
+        (10, "윤소희", "010-1234-1010", now),
+    ]
+
+    query = "INSERT INTO car_owners (id, name, phone_number, created_at) VALUES (%s, %s, %s, %s)"
+    cursor.executemany(query, dummy_data_1)
+    
+    
     # 2. registered_vehicles
-    for i in range(1, 21):
-        if i % 3 == 0:
-            vehicle_type = "DISABLED"
-        elif i % 2 == 0:
+    plate_texts = [
+        '154러7070', '157고4895', '137로2805', '214머4167', '358다6583',
+        '368러2704', '242조5916', '230고1494', '173두2632', '110라9081',
+        #전기차
+        '08호4122', '52주3108', '23가8564', '01서6647'
+    ]
+
+    dummy_data_2 = []
+
+    for i in range(1, 15):
+        if i > 10:
             vehicle_type = "EV"
+        elif i % 2 == 0:
+            vehicle_type = "DISABLED"
         else:
             vehicle_type = "NORMAL"
 
-        cursor.execute(
-            "INSERT INTO registered_vehicles (id, plate_text, owner_id, vehicle_type, created_at) VALUES (%s, %s, %s, %s, %s)",
-            (i, f"차량{i:04}", i, vehicle_type, now)
+        dummy_data_2.append(
+            (i, plate_texts[i-1], (i % 10) + 1, vehicle_type, now)
         )
 
+    query1 = """
+    INSERT INTO registered_vehicles 
+    (id, plate_text, owner_id, vehicle_type, created_at) 
+    VALUES (%s, %s, %s, %s, %s)
+    """
+    cursor.executemany(query1, dummy_data_2)
+
     # 3. rfid_tags
-    for i in range(1, 21):
-        cursor.execute(
-            "INSERT INTO rfid_tags (id, rfid_tag, created_at) VALUES (%s, %s, %s)",
-            (i, f"RFID{i:03}", now)
-        )
+    # for i in range(1, 21):
+    #     cursor.execute(
+    #         "INSERT INTO rfid_tags (id, rfid_tag, created_at) VALUES (%s, %s, %s)",
+    #         (i, f"RFID{i:03}", now)
+    #     )
+
+    dummy_data_3 = [
+        (1, "0643E69B", now),
+        (2, "0642919D", now),
+        (3, "09BBC4B1", now),
+        (4, "0643A29A", now),
+        (5, "06441B01", now),
+        (6, "0642CD01", now),
+        (7, "09491A91", now),
+    ]
+
+    query2 = """
+    INSERT INTO rfid_tags (id, rfid_tag, created_at)
+    VALUES (%s, %s, %s)
+    """
+    cursor.executemany(query2, dummy_data_3)
 
     # 4. robots
     for i in range(1, 21):
         cursor.execute(
             "INSERT INTO robots (id, floor, created_at) VALUES (%s, %s, %s)",
-            (i, i % 5, now)
+            (i, i, now)
         )
 
     # 5. parking_zones
-    for i in range(1, 21):
-        if i % 3 == 0:
-            zone_type = "DISABLED"
-        elif i % 2 == 0:
-            zone_type = "EV"
-        else:
-            zone_type = "NORMAL"
+    rfid_tags = [
+        "0643E69B", "0642919D", "09BBC4B1",
+        "0643A29A", "06441B01", "0642CD01", "09491A91"
+    ]
+
+    # zone_type 그룹별 지정 (4건씩)
+    zone_type_map = {
+        0: ["EV", "EV", "NORMAL", "NORMAL"],
+        1: ["EV", "EV", "NORMAL", "NORMAL"],
+        2: ["NONE", "NONE", "NONE", "NONE"],
+        3: ["NONE", "NONE", "NONE", "NONE"],
+        4: ["DISABLED", "DISABLED", "NORMAL", "NORMAL"],
+        5: ["DISABLED", "DISABLED", "NORMAL", "NORMAL"],
+        6: ["NONE", "NONE", "NONE", "NONE"],
+    }
+
+    for i in range(1, 29):
+        group_idx = (i - 1) // 4          # 0~6 (7 groups)
+        rfid_tag = rfid_tags[group_idx]
+        zone_idx = (i - 1) % 4            # 0~3 (zone 1~4)
+        zone_type = zone_type_map[group_idx][zone_idx]
+        floor = 1                # 1
+        zone_name = f"ZONE{zone_idx + 1}"
+
         cursor.execute(
-            "INSERT INTO parking_zones (id, name, zone_type, floor, created_at, rfid_tag) VALUES (%s, %s, %s, %s, %s, %s)",
-            (i, f"ZONE{i}", zone_type, i % 5, now, f"RFID{i:03}")
+            """
+            INSERT INTO parking_zones (id, name, zone_type, floor, created_at, rfid_tag)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            """,
+            (i, zone_name, zone_type, floor, now, rfid_tag)
         )
 
+        
     # 6. robot_logs
-    for i in range(1, 21):
-        cursor.execute(
-            "INSERT INTO robot_logs (id, zone_id, robot_id, plate_text, rfid_tag, created_at) VALUES (%s, %s, %s, %s, %s, %s)",
-            (i, i, i, f"차량{i:04}", f"RFID{i:03}", now)
-        )
+    # for i in range(1, 21):
+    #     cursor.execute(
+    #         "INSERT INTO robot_logs (id, zone_id, robot_id, plate_text, rfid_tag, created_at) VALUES (%s, %s, %s, %s, %s, %s)",
+    #         (i, i, i, f"차량{i:04}", f"RFID{i:03}", now)
+    #     )
 
     # 7. alert_logs
-    for i in range(1, 21):
-        cursor.execute(
-            "INSERT INTO alert_logs (id, zone_id, plate_text, reason, created_at) VALUES (%s, %s, %s, %s, %s)",
-            (i, i, f"차량{i:04}", "위반 사유 테스트", now)
-        )
+    # for i in range(1, 21):
+    #     cursor.execute(
+    #         "INSERT INTO alert_logs (id, zone_id, plate_text, reason, created_at) VALUES (%s, %s, %s, %s, %s)",
+    #         (i, i, f"차량{i:04}", "위반 사유 테스트", now)
+    #     )
 
     conn.commit()
     cursor.close()
