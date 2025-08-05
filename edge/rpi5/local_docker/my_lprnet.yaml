@@ -1,0 +1,31 @@
+# ===============================================================
+# my_lprnet.yaml - 최종 완성본 (설정 정보만 포함)
+# ===============================================================
+
+# 1. 네트워크 기본 정보
+network:
+  network_name: lprnet_hailo_final
+
+# 2. 파서(Parser) 설정
+parser:
+  # ONNX 모델의 시작/끝 노드 이름 정의
+  nodes: 
+    - "input"  
+    - "output" 
+
+  # 모델의 입력 형태 정의 (Batch, Height, Width, Channel 순서)
+  start_node_shapes:
+    input: [1, 75, 300, 3] 
+
+  # ★★★ 정규화 파라미터 (성능의 핵심) ★★★
+  normalization_params:
+    normalize_in_net: true
+    mean_list: [127.5, 127.5, 127.5]
+    std_list:  [128.0, 128.0, 128.0]
+
+# 3. 모델 정보 요약
+info:
+  input_shape: 75x300x3
+  output_shape: 5x19x52 # (H, W, C)
+  task: 'ocr'
+  framework: 'pytorch'

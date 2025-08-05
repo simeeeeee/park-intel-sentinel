@@ -1,0 +1,18 @@
+# requirements.txt
+# (버전 번호를 제거하여 pip이 현재 환경에 맞는 최신 버전을 설치하도록 함)
+
+# 이미지 및 행렬 연산
+numpy
+
+# 이미지 처리 (읽기, 쓰기, 리사이즈 등)
+opencv-python
+
+# 이미지 파일 경로 탐색 유틸리티
+imutils
+
+# PyTorch 모델을 ONNX 형식으로 변환
+onnx
+
+# ONNX 모델 실행 및 검증 (CUDA/GPU 환경용)
+# CPU만 사용한다면 onnxruntime으로 변경
+onnxruntime-gpu
