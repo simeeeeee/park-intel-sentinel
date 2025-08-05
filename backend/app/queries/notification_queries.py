@@ -1,12 +1,11 @@
 from typing import List
 from app.db.connection import database
+import logging
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)  # INFO 이상 출력
 # 알림 전체 조회
 async def fetch_alert_logs(order: str) -> List[dict]:
-    order = order.lower()
-    if order not in ('asc', 'desc'):
-        order = 'desc'  # 기본값
-
     query = f"""
         SELECT 
         alert_logs.id,
@@ -22,6 +21,8 @@ async def fetch_alert_logs(order: str) -> List[dict]:
         AND parking_zones.deleted_at IS NULL
         ORDER BY created_at {order}
     """
+    
+    logger.info(f"Executing query: {query}")
     return await database.fetch_all(query)
 
 
@@ -36,10 +37,6 @@ async def delete_alert_log(id: int):
 # 알림 조회
 # 최근 1분 이내 알림 조회
 async def fetch_alert_log_recent(order: str) -> List[dict]:
-    order = order.lower()
-    if order not in ('asc', 'desc'):
-        order = 'desc'  # 기본값 설정
-        
     query = f"""
         SELECT 
         alert_logs.id,
@@ -57,6 +54,8 @@ async def fetch_alert_log_recent(order: str) -> List[dict]:
         AND is_checked = FALSE
         ORDER BY created_at {order}
     """
+    
+    logger.info(f"Executing query: {query}")
     return await database.fetch_all(query)
 
 async def fetch_alert_log(id:int):
@@ -68,13 +67,16 @@ async def fetch_alert_log(id:int):
         alert_logs.reason,
         alert_logs.is_checked,
         parking_zones.name,
-        parking_zones.floor
+        parking_zones.floor,
+        parking_zones.rfid_tag,
+        registered_vehicles.entered_at
         FROM alert_logs
         LEFT JOIN parking_zones ON alert_logs.zone_id = parking_zones.id
-        WHERE created_at >= NOW() - INTERVAL 1 MINUTE
+        LEFT JOIN registered_vehicles ON alert_logs.plate_text = registered_vehicles.plate_text
+        LEFT JOIN car_owners ON registered_vehicles.owner_id = car_owners.id
+        WHERE alert_logs.id = :id
         AND alert_logs.deleted_at IS NULL
         AND parking_zones.deleted_at IS NULL
-        AND is_checked = FALSE
     """
     return await database.fetch_one(query, {"id": id})
         

@@ -10,6 +10,9 @@ logger.setLevel(logging.INFO)  # INFO 이상 출력
 async def get_notification_list(order: Optional[str] = None):
     try:
         #전체 알림 조회(asc: 오름차순/ desc: 내림차순)
+        if order is None or order.lower() not in ['asc', 'desc']: # default는 desc
+            order = 'desc'
+        
         result = await fetch_alert_logs(order)
         return {"data": result}
     except Exception as e:
@@ -22,15 +25,20 @@ async def get_notification_detail(id: int):
         
         # is_checked 상태를 True로 업데이트
         await update_alert_log_checked(id)
-        return {"data": result}
+        
+        return result
+        
     except Exception as e:
-            logger.error(f"Error recent_notification_list : {e}")
+            logger.error(f"Error notification_detail : {e}")
             
 async def get_recent_notification_list(order: Optional[str] = None):
     try:
+        if order is None or order.lower() not in ['asc', 'desc']: # default는 desc
+            order = 'desc'
+            
         #최근 알림 조회(asc: 오름차순/ desc: 내림차순)
         result = await fetch_alert_log_recent(order)
-        return {"data": result}
+        return {"logs": result}
     except Exception as e:
             logger.error(f"Error recent_notification_list : {e}")
             
@@ -41,4 +49,4 @@ async def delete_notification(id: int):
         await delete_alert_log(id)
         return {"message": f"{id} Notification deleted"}
     except Exception as e:
-            logger.error(f"Error delete_notification : {e}")
+            logger.error(f"Error delete_notification : {e}") 
