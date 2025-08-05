@@ -15,6 +15,7 @@ from MFRC522 import MFRC522
 import signal
 import time
 import subprocess
+import socket
 
 # ===============================================
 # 중요: GUI 표시 여부 플래그
@@ -81,6 +82,19 @@ class ColorDepthTracker(Node):
 
         self.rfid_stop_flag = False
         self.rfid_stop_uid = None
+        #소켓통신 호스트 포트 설정
+        self.HOST = '127.0.0.1'             # 수정된 코드 (또는 'localhost')
+        self.PORT = 1004
+
+        # LTS 250610
+        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.client_socket.connect((self.HOST, self.PORT))
+
+    def send_message(self, message):
+        # 메시지를 utf-8 형식으로 인코딩하여 전송
+        self.client_socket.sendall(message.encode())
+
+
 
     def load_hsv_config(self, json_name="HSV-cal.json"):
         default = {
@@ -203,6 +217,7 @@ class ColorDepthTracker(Node):
             if getattr(self, 'rfid_stop_flag', False):
                 self.stop()
                 self.get_logger().info(f"RFID 인식: 차량 2초간 정지 (UID: {self.rfid_stop_uid})")
+                self.send_message(self.rfid_stop_uid)
                 time.sleep(2)
                 self.rfid_stop_flag = False
                 self.rfid_stop_uid = None
