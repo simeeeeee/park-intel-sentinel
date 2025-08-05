@@ -69,6 +69,7 @@ async def save_robot_log(zone_id: int, robot_id: int, rfid_tag: str, plate_text:
     """
     await database.execute(query, {
         "zone_id": zone_id,
+        "robot_id": robot_id,
         "rfid_tag": rfid_tag,
         "plate_text": plate_text
     })
