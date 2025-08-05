@@ -42,6 +42,7 @@ TABLES['registered_vehicles'] = (
     "  plate_text VARCHAR(50) NOT NULL UNIQUE,"
     "  owner_id BIGINT,"
     "  vehicle_type VARCHAR(20),"
+    "  entered_at DATETIME,"
     "  created_at DATETIME,"
     "  updated_at DATETIME,"
     "  deleted_at DATETIME,"
