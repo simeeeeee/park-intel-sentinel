@@ -30,7 +30,7 @@ async def process_robot_status(request: RobotStatusRequest):
                     logger.info(f"Vehicle text is empty for key={key}, skipping")
                     continue
                 # parking_zones 테이블에서 zone_id 조회 (key, rfid 기준)
-                zone_id = await fetch_zone_id(rfid, key)  # DB 조회 함수
+                zone_id, zone_type = await fetch_parking_zone_info(rfid, key)  # DB 조회 함수
                 logger.info(f"Zone for rfid={rfid}, key={key}")
                 if zone_id is None:
                     # raise ValueError("존재하지 않는 zone입니다.")
@@ -45,7 +45,7 @@ async def process_robot_status(request: RobotStatusRequest):
                     continue
                 
                 # vehicle.text기반으로 registered_vehicles 테이블에서 vehicle_type 조회
-                vehicle_type, vehicle_id = await fetch_vehicle_type(vehicle.text)  # DB 조회 함수
+                vehicle_id, vehicle_type = await fetch_vehicle_info(vehicle.text)  # DB 조회 함수
                 if vehicle_id is None:
                     # raise ValueError("존재하지 않는 vehicle_type, id입니다.")
                     logger.info(f"vehicle_id not found for {vehicle.text}")
@@ -54,8 +54,6 @@ async def process_robot_status(request: RobotStatusRequest):
                 if vehicle_type is None:
                     vehicle_type = "unknown"   
                 
-                # zone_id기반으로 해당 zone의 zone_type 조회
-                zone_type = await fetch_zone_type(zone_id)  # DB 조회 함수
                 if zone_type is None:
                     # raise ValueError("존재하지 않는 zone_type입니다.")
                     logger.info(f"zone_type not found for zone_id {zone_id}")

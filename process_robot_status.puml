@@ -1,0 +1,61 @@
+@startuml
+actor Robot
+participant "WebAPI\n(process_robot_status)" as WebAPI
+participant "DBBroker\n(비즈니스 로직)" as DBBroker
+database Database
+
+Robot -> WebAPI: robot_id, rfid, vehicles 전송
+
+loop 각 차량(vehicle) 처리
+    alt vehicle.text가 비어 있음
+        WebAPI -> DBBroker: fetch_parking_zone_info(rfid, key)
+        DBBroker -> Database: SELECT zone_id, zone_type FROM parking_zones
+        Database --> DBBroker: zone_id, zone_type
+        DBBroker --> WebAPI: zone 정보
+
+        WebAPI -> DBBroker: delete_alert_logs(zone_id)
+        DBBroker -> Database: DELETE FROM alert_logs WHERE zone_id=? AND deleted_at IS NULL
+
+    else vehicle.text 존재
+        WebAPI -> DBBroker: fetch_parking_zone_info(rfid, key)
+        DBBroker -> Database: SELECT zone_id, zone_type FROM parking_zones
+        Database --> DBBroker: zone_id, zone_type
+        DBBroker --> WebAPI: zone 정보
+
+        WebAPI -> DBBroker: fetch_vehicle_info(vehicle.text)
+        DBBroker -> Database: SELECT vehicle_id, vehicle_type FROM registered_vehicles
+        Database --> DBBroker: vehicle_id, vehicle_type
+        DBBroker --> WebAPI: vehicle 정보
+
+        WebAPI -> DBBroker: fetch_alert_logs(zone_id)
+        DBBroker -> Database: SELECT * FROM alert_logs WHERE zone_id=? AND deleted_at IS NULL
+        Database --> DBBroker: alert_logs
+        DBBroker --> WebAPI: alert_logs
+
+        loop alert_log 목록
+            alt plate_text 불일치
+                WebAPI -> DBBroker: delete_alert_log(log.id)
+                DBBroker -> Database: DELETE FROM alert_logs WHERE id=?
+            end
+        end
+
+        alt vehicle_type != zone_type
+            alt 예외: DISABLED → EV 가능
+                WebAPI -> WebAPI: skip 저장
+            else
+                WebAPI -> DBBroker: save_alert_log(zone_id, plate_text, reason)
+                DBBroker -> Database: INSERT INTO alert_logs (...)
+            end
+        end
+
+        alt robot_id is None
+            WebAPI -> WebAPI: robot_id = 1
+        end
+
+        WebAPI -> DBBroker: save_robot_log(zone_id, robot_id, rfid, plate_text)
+        DBBroker -> Database: INSERT INTO robot_logs (...)
+    end
+end
+
+WebAPI --> Robot: {"processed_count": 차량 수}
+@enduml

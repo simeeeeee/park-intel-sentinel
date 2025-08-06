@@ -2,13 +2,18 @@ from typing import Optional, Tuple, List
 from app.db.connection import database  # DB 연결 인스턴스
 
 # zone_id 조회
-async def fetch_zone_id(rfid: str, zone_name: str) -> Optional[int]:
+async def fetch_parking_zone_info(rfid: str, zone_name: str) -> Optional[int]:
     query = """
-        SELECT id FROM parking_zones
+        SELECT 
+        id,
+        zone_type
+        FROM parking_zones
         WHERE rfid_tag = :rfid AND name = :zone_name
     """
     result = await database.fetch_one(query, {"rfid": rfid, "zone_name": zone_name})
-    return result["id"] if result else None
+    if result:
+        return result["id"], result["zone_type"]
+    return None, None
 
 # zone_type 조회
 async def fetch_zone_type(zone_id: int) -> Optional[str]:
@@ -17,14 +22,14 @@ async def fetch_zone_type(zone_id: int) -> Optional[str]:
     return result["zone_type"] if result else None
 
 # 차량 번호 기반 vehicle_type, vehicle_id 조회
-async def fetch_vehicle_type(plate_text: str) -> Tuple[Optional[str], Optional[int]]:
+async def fetch_vehicle_info(plate_text: str) -> Tuple[Optional[str], Optional[int]]:
     query = """
         SELECT id, vehicle_type FROM registered_vehicles
         WHERE plate_text = :plate_text
     """
     result = await database.fetch_one(query, {"plate_text": plate_text})
     if result:
-        return result["vehicle_type"], result["id"]
+        return result["id"], result["vehicle_type"]
     return None, None
 
 # alert_logs 조회
@@ -69,6 +74,7 @@ async def save_robot_log(zone_id: int, robot_id: int, rfid_tag: str, plate_text:
     """
     await database.execute(query, {
         "zone_id": zone_id,
+        "robot_id": robot_id,
         "rfid_tag": rfid_tag,
         "plate_text": plate_text
     })
