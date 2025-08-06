@@ -24,13 +24,13 @@ async def fetch_zone_type(zone_id: int) -> Optional[str]:
 # 차량 번호 기반 vehicle_type, vehicle_id 조회
 async def fetch_vehicle_info(plate_text: str) -> Tuple[Optional[str], Optional[int]]:
     query = """
-        SELECT id, vehicle_type FROM registered_vehicles
-        WHERE plate_text = :plate_text
+        SELECT id, vehicle_type, plate_text FROM registered_vehicles
+        WHERE RIGHT(plate_text, 4) = :plate_text
     """
     result = await database.fetch_one(query, {"plate_text": plate_text})
     if result:
-        return result["id"], result["vehicle_type"]
-    return None, None
+        return result["id"], result["vehicle_type"], result["plate_text"]
+    return None, None, None
 
 # alert_logs 조회
 async def fetch_alert_logs(zone_id: int) -> List[dict]:
