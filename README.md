@@ -35,20 +35,16 @@ git clone https://github.com/simeeeeee/park-intel-sentinel.git
 
 ---
 
-## ⚙️ Prerequisite
+## 🧑‍💻 Members
 
-프로젝트 실행을 위해 아래 환경이 필요합니다:
+  | Name | Role |
+  |----|----|
+  | 👨‍🎓 이건희 | Project lead, 프로젝트 기획, 로봇 아키텍쳐 구성, 로봇 제어 구현 |
+  | 🐥 나성심 | Project manager, Back-end 구현 및 서버, 시스템 아키텍처 설계 및 구현|
+  | 🐻 최현원 | Embedded system developer, 하드웨어 구성 및 로봇 제어 로직 구현 |
+  | 🐨 하성민 | AI developer, AI modeling, Hailo-8 적용, data 수집, training을 수행 |
+  | 🐰 신지혜 | Unity developer, 사용자 인터페이스를 정의 및 구현, Unity 활용한 CMS 구현 |
 
-```bash
-# 가상환경 생성
-python -m venv .venv
-
-# 가상환경 활성화
-source .venv/bin/activate
-
-# 의존성 설치
-pip install -r requirements.txt
-```
 
 ---
 
