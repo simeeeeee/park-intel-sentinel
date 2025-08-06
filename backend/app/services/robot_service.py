@@ -22,6 +22,7 @@ async def process_robot_status(request: RobotStatusRequest):
     robot_id = request.robot_id
     rfid = request.rfid
     vehicles = request.vehicles  # Dict[str, VehicleInfo]
+    count = 0
 
     for key, vehicle in vehicles.items():
         try:
@@ -83,12 +84,13 @@ async def process_robot_status(request: RobotStatusRequest):
                 logger.info(f"save_robot_log({zone_id}, {robot_id}, {rfid}, {vehicle.text})")
                 await save_robot_log(zone_id=zone_id, robot_id=robot_id, rfid_tag=rfid, plate_text=vehicle.text)
                 logger.info(f"robot_logs 저장 {key}, {vehicle}")
+                count += 1
                 
         except Exception as e:
             logger.error(f"Error processing vehicle key={key}: {e}")
-
             
-    return {"processed_count": len(vehicles)}
+    logger.info(f"Total logs saved: {count}")
+    return {"save_log_count": count}
 
 
 
