@@ -1,8 +1,0 @@
-@startuml
--> WebAPI: robot_position
-DBBroker -> Database: query
-Database --> DBBroker: robot_position
-WebAPI -> DBBroker: getRobotPosition(time)
-DBBroker --> WebAPI: robot_position_response
-WebAPI -> WebUI: updateRobotPosition(robot_position)
-@enduml
