@@ -19,7 +19,7 @@ async def fetch_alert_logs(order: str) -> List[dict]:
         LEFT JOIN parking_zones ON alert_logs.zone_id = parking_zones.id
         WHERE alert_logs.deleted_at IS NULL
         AND parking_zones.deleted_at IS NULL
-        ORDER BY created_at {order}
+        ORDER BY alert_logs.created_at {order}
     """
     
     logger.info(f"Executing query: {query}")
@@ -48,11 +48,11 @@ async def fetch_alert_log_recent(order: str) -> List[dict]:
         parking_zones.floor
         FROM alert_logs
         LEFT JOIN parking_zones ON alert_logs.zone_id = parking_zones.id
-        WHERE created_at >= NOW() - INTERVAL 72 HOUR 
+        WHERE alert_logs.created_at >= NOW() - INTERVAL 72 HOUR 
         AND alert_logs.deleted_at IS NULL
         AND parking_zones.deleted_at IS NULL
-        AND is_checked = FALSE
-        ORDER BY created_at {order}
+        AND alert_logs.is_checked = FALSE
+        ORDER BY alert_logs.created_at {order}
     """
     
     logger.info(f"Executing query: {query}")
