@@ -12,11 +12,12 @@ import time
 import threading
 from tsanpr.tsanpr import TSANPR
 from PIL import ImageFont, ImageDraw, Image
-import serial
-import select
-import termios
-import tty
 import requests
+from MFRC522 import MFRC522
+from concurrent.futures import ThreadPoolExecutor
+
+# 설정
+SAVE_IMAGES = False  # 필요 시 True로 변경
 
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s - %(message)s', datefmt='%H:%M:%S')
 EXAMPLES_BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
@@ -63,6 +64,8 @@ def recognize_from_frame(tsanpr, frame, label):
         return []
 
 def draw_top2_plates_on_image(frame, plates, label, save_path):
+    if not SAVE_IMAGES:
+        return
     img_pil = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
     draw = ImageDraw.Draw(img_pil)
     font = ImageFont.truetype("/usr/share/fonts/truetype/nanum/NanumGothic.ttf", 24)
@@ -71,14 +74,15 @@ def draw_top2_plates_on_image(frame, plates, label, save_path):
     cv2.imwrite(save_path, cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR))
 
 def send_results_to_server(results, sensor_name):
-    def get_top1(results): return sorted(results, key=lambda x: x.get("size", 0), reverse=True)[0] if results else {"text": "", "ev": ""}
+    def get_top1(results): 
+        return sorted(results, key=lambda x: x.get("size", 0), reverse=True)[0] if results else {"text": "", "ev": "일반"}
     result_data = {
         "rfid": sensor_name,
         "vehicles": {
-            "1": get_top1(results["1"]),
-            "2": get_top1(results["2"]),
-            "3": get_top1(results["3"]),
-            "4": get_top1(results["4"])
+            "ZONE1": get_top1(results.get("1", [])),
+            "ZONE2": get_top1(results.get("2", [])),
+            "ZONE3": get_top1(results.get("3", [])),
+            "ZONE4": get_top1(results.get("4", [])),
         }
     }
     try:
@@ -87,70 +91,65 @@ def send_results_to_server(results, sensor_name):
     except Exception as e:
         logging.error(f"서버 전송 실패: {e}")
 
-def wait_for_rfid(port="/dev/ttyAMA10", baudrate=9600):
-    try:
-        with serial.Serial(port, baudrate, timeout=0.1) as ser:
-            logging.info(f"RFID 포트 {port} 연결됨")
-            while True:
-                data = ser.readline().decode().strip()
-                if data:
-                    logging.info(f"RFID 태그: {data}")
-                    return data
-    except Exception as e:
-        logging.warning(f"RFID 포트 오류: {e}")
-    return None
-
-def keyboard_thread():
-    fd = sys.stdin.fileno()
-    old_settings = termios.tcgetattr(fd)
-    tty.setcbreak(fd)
-    try:
-        while True:
-            if select.select([sys.stdin], [], [], 0.1)[0] and sys.stdin.read(1).lower() == 'y':
-                sensor_name_holder["name"] = "KEY_INPUT"
-                rfid_event.set()
-    finally:
-        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-
 def rfid_thread():
+    reader = MFRC522()
+    logging.info("RFID 리더 초기화 완료")
+    last_read_time = 0
     while True:
-        rfid = wait_for_rfid()
-        if rfid:
-            sensor_name_holder["name"] = rfid
-            rfid_event.set()
+        if time.time() - last_read_time < 1:
+            time.sleep(0.1)
+            continue
+        (status, tag_type) = reader.MFRC522_Request(reader.PICC_REQIDL)
+        if status == reader.MI_OK:
+            (status, uid) = reader.MFRC522_Anticoll(0x93)
+            if status == reader.MI_OK:
+                # uid 배열에서 첫 바이트 제외하고 4바이트 정방향 16진수 대문자 변환
+                uid_str = f"{uid[3]:02X}{uid[2]:02X}{uid[1]:02X}{uid[0]:02X}"
+                logging.info(f"Formatted UID: {uid_str}")
+                sensor_name_holder["name"] = uid_str
+                last_read_time = time.time()
+                rfid_event.set()
+
+def process_zone(tsanpr, region, k, results):
+    recog = recognize_from_frame(tsanpr, region, f"CAM_{k}")
+    results[k] = recog
+    draw_top2_plates_on_image(region, recog, f"CAM_{k}", f"result_{k}.jpg")
 
 def capture_and_infer(tsanpr, frame_left, frame_right, sensor_name):
     h, w = frame_left.shape[:2]
     mid = w // 2
     regions = {
-        "1": frame_left[:, mid:],     # Left camera right side
-        "2": frame_left[:, :mid],     # Left camera left side
-        "3": frame_right[:, :mid],    # Right camera left side
-        "4": frame_right[:, mid:]     # Right camera right side
+        "1": frame_left[:, :mid],     # 왼쪽 카메라 왼쪽  → ZONE1
+        "2": frame_left[:, mid:],     # 왼쪽 카메라 오른쪽 → ZONE2
+        "3": frame_right[:, :mid],    # 오른쪽 카메라 왼쪽 → ZONE3
+        "4": frame_right[:, mid:]     # 오른쪽 카메라 오른쪽 → ZONE4
     }
+
     results = {}
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = {}
+        for k in ["1", "2", "3", "4"]:
+            futures[k] = executor.submit(process_zone, tsanpr, regions[k], k, results)
+        for k in ["1", "2", "3", "4"]:
+            futures[k].result()
 
-    for k, region in regions.items():
-        recog = recognize_from_frame(tsanpr, region, f"CAM_{k}")
-        results[k] = recog
-        draw_top2_plates_on_image(region, recog, f"CAM_{k}", f"result_{k}.jpg")
-
+    for k in ["1", "2", "3", "4"]:
+        recog = results.get(k, [])
         if recog:
             top = sorted(recog, key=lambda x: x["size"], reverse=True)[0]
-            logging.info(f"[{k}번 차량] 인식된 번호: {top['text']} | EV 여부: {top['ev']}")
+            logging.info(f"[ZONE{k}] 인식된 번호: {top['text']} | EV 여부: {top['ev']}")
         else:
-            logging.info(f"[{k}번 차량] 인식된 번호 없음")
+            logging.info(f"[ZONE{k}] 인식된 번호 없음")
 
     send_results_to_server(results, sensor_name)
 
 def capture_loop(tsanpr):
-    cap_l, cap_r = cv2.VideoCapture("/dev/video0"), cv2.VideoCapture("/dev/video2")
+    cap_l, cap_r = cv2.VideoCapture("/dev/video2"), cv2.VideoCapture("/dev/video0")
     if not cap_l.isOpened() or not cap_r.isOpened():
         logging.error("카메라 열기 실패")
         return
 
     threading.Thread(target=rfid_thread, daemon=True).start()
-    threading.Thread(target=keyboard_thread, daemon=True).start()
     logging.info("웹캠 실행 시작")
 
     while True:
@@ -168,7 +167,9 @@ def capture_loop(tsanpr):
 
         if rfid_event.is_set():
             rfid_event.clear()
-            capture_and_infer(tsanpr, frame_l.copy(), frame_r.copy(), sensor_name_holder["name"])
+            capture_and_infer(tsanpr, frame_l, frame_r, sensor_name_holder["name"])
+
+        time.sleep(0.03)
 
     cap_l.release()
     cap_r.release()
@@ -188,7 +189,7 @@ def main():
     except Exception as e:
         logging.error(f"TSANPR 초기화 실패: {e}")
 
-# 전역 플래그
+# 전역 변수
 rfid_event = threading.Event()
 sensor_name_holder = {"name": None}
 
