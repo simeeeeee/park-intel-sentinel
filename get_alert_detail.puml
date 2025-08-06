@@ -1,0 +1,17 @@
+@startuml
+actor Client
+participant WebAPI as "WebAPI\n(get_notification_detail)"
+participant DBBroker as "DBBroker\n(fetch/update_alert_log)"
+database Database
+
+Client -> WebAPI: get_notification_detail(id)
+
+WebAPI -> Database: fetch_alert_log(id)
+' DBBroker -> Database: SELECT * FROM alert_logs WHERE id = ?
+Database --> WebAPI: alert_log
+
+WebAPI -> Database: update_alert_log_checked(id)
+' DBBroker -> Database: UPDATE alert_logs SET is_checked = True WHERE id = ?
+
+WebAPI --> Client: alert_log 상세 정보 반환
+@enduml

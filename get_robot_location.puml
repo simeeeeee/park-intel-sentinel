@@ -1,0 +1,23 @@
+@startuml
+actor Client
+participant "WebAPI" as WebAPI
+' participant "DBBroker\n(fetch_robot_log)" as DBBroker
+database Database
+
+Client -> WebAPI: get_robot_position(robot_id)
+
+WebAPI -> Database: fetch_robot_log(robot_id)
+' DBBroker -> Database: SELECT * FROM robot_logs\nWHERE robot_id = ?\nORDER BY created_at DESC LIMIT 1
+Database --> WebAPI: robot_log
+
+alt robot_log is None
+    WebAPI --> Client: robot_log is not found
+else robot_log exists
+    alt robot_log.created_at < now - 1 minute
+        WebAPI --> Client: Robot is inactive for more than 1 minute
+    else robot_log is recent
+        WebAPI --> Client: Robot position is up-to-date
+    end
+end
+
+@enduml
