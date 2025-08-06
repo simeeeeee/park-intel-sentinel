@@ -44,7 +44,8 @@ async def process_robot_status(request: RobotStatusRequest):
                     continue
                 
                 # vehicle.text기반으로 registered_vehicles 테이블에서 vehicle_type 조회
-                vehicle_id, vehicle_type = await fetch_vehicle_info(vehicle.text)  # DB 조회 함수
+                last_four_digits = vehicle.text[-4:] # 차량 번호의 마지막 4자리로 조회
+                vehicle_id, vehicle_type, plate_text = await fetch_vehicle_info(last_four_digits)  # DB 조회 함수
                 if vehicle_id is None:
                     # raise ValueError("존재하지 않는 vehicle_type, id입니다.")
                     logger.info(f"vehicle_id not found for {vehicle.text}")
@@ -62,7 +63,7 @@ async def process_robot_status(request: RobotStatusRequest):
                 logs = await fetch_alert_logs(zone_id)
                 for log in logs:
                     # log에서 plate_text가 vehicle.text와 일치하는지 확인
-                    if log.plate_text != vehicle.text:
+                    if log.plate_text != plate_text:
                         # 일치하지 않으면 해당 로그 삭제
                         logger.info(f"delete_alert_log({log.id})")
                         await delete_alert_log(log.id)
@@ -71,7 +72,7 @@ async def process_robot_status(request: RobotStatusRequest):
                 if zone_type not in ("NORMAL"): 
                     if zone_type != vehicle_type:
                         logger.info(f"vehicle {vehicle_type} / zone {zone_type}")
-                        await save_alert_log(zone_id=zone_id, plate_text=vehicle.text, reason=f"vehicle {vehicle_type} / zone {zone_type}")
+                        await save_alert_log(zone_id=zone_id, plate_text=plate_text, reason=f"vehicle {vehicle_type} / zone {zone_type}")
 
                 
                 # robot_logs 테이블에 로그 저장
@@ -82,7 +83,7 @@ async def process_robot_status(request: RobotStatusRequest):
                 
                 
                 logger.info(f"save_robot_log({zone_id}, {robot_id}, {rfid}, {vehicle.text})")
-                await save_robot_log(zone_id=zone_id, robot_id=robot_id, rfid_tag=rfid, plate_text=vehicle.text)
+                await save_robot_log(zone_id=zone_id, robot_id=robot_id, rfid_tag=rfid, plate_text=plate_text)
                 logger.info(f"robot_logs 저장 {key}, {vehicle}")
                 count += 1
                 
