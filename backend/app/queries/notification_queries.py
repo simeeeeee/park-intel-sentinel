@@ -48,7 +48,7 @@ async def fetch_alert_log_recent(order: str) -> List[dict]:
         parking_zones.floor
         FROM alert_logs
         LEFT JOIN parking_zones ON alert_logs.zone_id = parking_zones.id
-        WHERE created_at >= NOW() - INTERVAL 72 HOUR
+        WHERE created_at >= NOW() - INTERVAL 72 HOUR 
         AND alert_logs.deleted_at IS NULL
         AND parking_zones.deleted_at IS NULL
         AND is_checked = FALSE
