@@ -26,10 +26,7 @@ async def process_robot_status(request: RobotStatusRequest):
     for key, vehicle in vehicles.items():
         try:
             async with database.transaction():
-                if not vehicle.text:
-                    logger.info(f"Vehicle text is empty for key={key}, skipping")
-                    continue
-                # parking_zones 테이블에서 zone_id 조회 (key, rfid 기준)
+                # parking_zones 테이블에서 zone_info 조회 (key, rfid 기준)
                 zone_id, zone_type = await fetch_parking_zone_info(rfid, key)  # DB 조회 함수
                 logger.info(f"Zone for rfid={rfid}, key={key}")
                 if zone_id is None:
@@ -37,11 +34,12 @@ async def process_robot_status(request: RobotStatusRequest):
                     logger.info(f"Zone not found for rfid={rfid}, key={key}")
                     continue
                 
-                # 만약 zone_type이 normal인 경우, vehicle.text가 비어있으면 해당 zone_id에 대한 alert_logs 테이블에서 삭제
+                # vehicle.text가 비어있으면 해당 zone_id에 대한 alert_logs 테이블에서 삭제
                 if not vehicle.text:
                     # alert_logs 테이블에서 zone_id에 대한 모든 데이터 삭제 처리
                     logger.info(f"delete_alert_logs({zone_id})")
                     await delete_alert_logs(zone_id)
+                    logger.info(f"Vehicle text is empty for key={key}, skipping")
                     continue
                 
                 # vehicle.text기반으로 registered_vehicles 테이블에서 vehicle_type 조회
@@ -69,13 +67,11 @@ async def process_robot_status(request: RobotStatusRequest):
                         await delete_alert_log(log.id)
                 
                 # 만약 vehicle_type과 zone_type이 일치하지 않으면, 해당 zone_id에 대한 alert_logs 테이블에 로그 저장
-                if vehicle_type != zone_type: 
-                    #장애인등록 - 전기차구역은 가능
-                    if vehicle_type == "DISABLED" and zone_type == "EV":
-                        logger.info(f"장애인 등록- 전기차구역 vehicle {vehicle_type} / zone {zone_type}")
-                        continue
- 
-                    await save_alert_log(zone_id=zone_id, plate_text=vehicle.text, reason=f"vehicle {vehicle_type} / zone {zone_type}")
+                if zone_type not in ("NORMAL"): 
+                    if zone_type != vehicle_type:
+                        logger.info(f"vehicle {vehicle_type} / zone {zone_type}")
+                        await save_alert_log(zone_id=zone_id, plate_text=vehicle.text, reason=f"vehicle {vehicle_type} / zone {zone_type}")
+
                 
                 # robot_logs 테이블에 로그 저장
                 # robot_id 없다면 default로 1로 설정
