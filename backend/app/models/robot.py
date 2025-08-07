@@ -1,5 +1,6 @@
 from typing import Dict, Optional
 from pydantic import BaseModel
+from datetime import datetime
 
 class VehicleInfo(BaseModel):
     text: str
@@ -20,4 +21,5 @@ class RobotVehiclesLocationResponse(BaseModel):
     rfid_tag: Optional[str]  # ✅ None 허용
     message: str
     floor: int
+    created_at: datetime
     vehicles : Dict[str, Optional[list[VehicleLocation]]]

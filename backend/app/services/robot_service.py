@@ -79,6 +79,7 @@ async def process_robot_status(request: RobotStatusRequest):
                 
                 # 만약 vehicle_type과 zone_type이 일치하지 않으면, 해당 zone_id에 대한 alert_logs 테이블에 로그 저장
                 if zone_type not in ("NORMAL"): 
+                    logger.info(f"----------------zone {zone_type}")
                     if zone_type != vehicle_type:
                         logger.info(f"vehicle {vehicle_type} / zone {zone_type}")
                         await save_alert_log(zone_id=zone_id, plate_text=plate_text, reason=f"vehicle {vehicle_type} / zone {zone_type}")
@@ -126,6 +127,7 @@ async def get_robot_position(id: int) -> RobotVehiclesLocationResponse:
                 rfid_tag=rfid_tag,
                 message=message,
                 floor=floor,
+                created_at=created_at,
                 vehicles=vehicles
             )
 
