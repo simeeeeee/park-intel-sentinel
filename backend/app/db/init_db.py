@@ -42,6 +42,7 @@ TABLES['registered_vehicles'] = (
     "  plate_text VARCHAR(50) NOT NULL UNIQUE,"
     "  owner_id BIGINT,"
     "  vehicle_type VARCHAR(20),"
+    "  car_type VARCHAR(20),"
     "  entered_at DATETIME,"
     "  created_at DATETIME,"
     "  updated_at DATETIME,"
@@ -89,6 +90,7 @@ TABLES['robot_logs'] = (
     "  zone_id BIGINT,"
     "  robot_id BIGINT,"
     "  plate_text VARCHAR(50),"
+    "  zone_name VARCHAR(100),"
     "  rfid_tag VARCHAR(100),"
     "  image_path TEXT,"
     "  created_at DATETIME,"
@@ -96,7 +98,6 @@ TABLES['robot_logs'] = (
     "  deleted_at DATETIME,"
     "  FOREIGN KEY (zone_id) REFERENCES parking_zones(id),"
     "  FOREIGN KEY (robot_id) REFERENCES robots(id),"
-    "  FOREIGN KEY (plate_text) REFERENCES registered_vehicles(plate_text),"
     "  FOREIGN KEY (rfid_tag) REFERENCES rfid_tags(rfid_tag)"
     ") ENGINE=InnoDB"
 )
@@ -170,15 +171,22 @@ def insert_dummy_data():
             vehicle_type = "DISABLED"
         else:
             vehicle_type = "NORMAL"
+        
+        car_type = "truck"
+        if i%2 == 0:
+            car_type = "sedan"
+        elif 1%3 == 0:
+            car_type = "suv"
+
 
         dummy_data_2.append(
-            (i, plate_texts[i-1], (i % 10) + 1, vehicle_type, now)
+            (i, plate_texts[i-1], (i % 10) + 1, vehicle_type, car_type, now)
         )
 
     query1 = """
     INSERT INTO registered_vehicles 
-    (id, plate_text, owner_id, vehicle_type, created_at) 
-    VALUES (%s, %s, %s, %s, %s)
+    (id, plate_text, owner_id, vehicle_type, car_type, created_at) 
+    VALUES (%s, %s, %s, %s, %s, %s)
     """
     cursor.executemany(query1, dummy_data_2)
 
