@@ -1,4 +1,4 @@
-from app.models.robot import RobotStatusRequest
+from app.models.robot import *
 from app.queries.robot_queries import *
 from app.db.connection import database
 import logging
@@ -27,8 +27,13 @@ async def process_robot_status(request: RobotStatusRequest):
     for key, vehicle in vehicles.items():
         try:
             async with database.transaction():
+                # robot_id 없다면 default로 1로 설정
+                if robot_id is None:
+                    logger.info(f"robot_id is None, setting to default 1")
+                    robot_id = 1
+
                 # parking_zones 테이블에서 zone_info 조회 (key, rfid 기준)
-                zone_id, zone_type = await fetch_parking_zone_info(rfid, key)  # DB 조회 함수
+                zone_id, zone_type, zone_name = await fetch_parking_zone_info(rfid, key)  # DB 조회 함수
                 logger.info(f"Zone for rfid={rfid}, key={key}")
                 if zone_id is None:
                     # raise ValueError("존재하지 않는 zone입니다.")
@@ -41,6 +46,10 @@ async def process_robot_status(request: RobotStatusRequest):
                     logger.info(f"delete_alert_logs({zone_id})")
                     await delete_alert_logs(zone_id)
                     logger.info(f"Vehicle text is empty for key={key}, skipping")
+                    logger.info(f"save_robot_log({zone_id}, {robot_id}, {rfid}, '')")
+                    await save_robot_log(zone_id=zone_id, robot_id=robot_id, zone_name=zone_name, rfid_tag=rfid, plate_text="")
+                    logger.info(f"robot_logs 저장 {key}, '' ")
+                    count += 1
                     continue
                 
                 # vehicle.text기반으로 registered_vehicles 테이블에서 vehicle_type 조회
@@ -73,17 +82,9 @@ async def process_robot_status(request: RobotStatusRequest):
                     if zone_type != vehicle_type:
                         logger.info(f"vehicle {vehicle_type} / zone {zone_type}")
                         await save_alert_log(zone_id=zone_id, plate_text=plate_text, reason=f"vehicle {vehicle_type} / zone {zone_type}")
-
-                
-                # robot_logs 테이블에 로그 저장
-                # robot_id 없다면 default로 1로 설정
-                if robot_id is None:
-                    logger.info(f"robot_id is None, setting to default 1")
-                    robot_id = 1
-                
                 
                 logger.info(f"save_robot_log({zone_id}, {robot_id}, {rfid}, {vehicle.text})")
-                await save_robot_log(zone_id=zone_id, robot_id=robot_id, rfid_tag=rfid, plate_text=plate_text)
+                await save_robot_log(zone_id=zone_id, robot_id=robot_id, zone_name=zone_name, rfid_tag=rfid, plate_text=plate_text)
                 logger.info(f"robot_logs 저장 {key}, {vehicle}")
                 count += 1
                 
@@ -95,28 +96,39 @@ async def process_robot_status(request: RobotStatusRequest):
 
 
 
-async def get_robot_position(id: int):
-    # 로봇 위치 조회 로직
+async def get_robot_position(id: int) -> RobotVehiclesLocationResponse:
     try:
         async with database.transaction():
-            # robot_id기반으로 robot_logs에서 가장 최근의 log를 가져옴
             log = await fetch_robot_log(id)
-            
-            
+
+            # 기본 응답값 세팅
+            rfid_tag = None
+            message = ""
+            floor = 0
+            vehicles: Dict[str, Optional[VehicleLocation]] = {}
+
             if log is None:
-                return {"robot_id": id, "rfid_tag": None, "message": "No log found"}
-            
-            logger.info(f"robot_logs 조회 {datetime.now()}, 차이 {datetime.now() - timedelta(minutes=1)}")
-            if log["created_at"] < (datetime.now() - timedelta(minutes=1)):
-                return {"robot_id": id, "rfid_tag": None, "message": "Robot is inactive for more than 1 minute"}
+                message = "No log found"
+            else:
+                created_at = log["created_at"]
+                if created_at < (datetime.now() - timedelta(minutes=1)):
+                    message = "Robot is inactive for more than 1 minute"
+                else:
+                    rfid_tag = log["rfid_tag"]
+                    floor = log["floor"]
+                    message = "success"
 
-            return {
-                "robot_id": id,
-                "rfid_tag": log["rfid_tag"],
-                "floor": log["floor"],
-                "created_at": log["created_at"].isoformat()
-            }
-            
+            # 차량 정보 조회
+            vehicles = await fetch_vehicle_locations_by_rfid()
+
+            return RobotVehiclesLocationResponse(
+                robot_id=id,
+                rfid_tag=rfid_tag,
+                message=message,
+                floor=floor,
+                vehicles=vehicles
+            )
+
     except Exception as e:
-            logger.error(f"Error robot_position {id}: {e}")
-
+        logger.error(f"Error in get_robot_position({id}): {e}")
+        raise

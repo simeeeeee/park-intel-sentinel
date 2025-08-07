@@ -1,19 +1,21 @@
 from typing import Optional, Tuple, List
 from app.db.connection import database  # DB 연결 인스턴스
+from app.models.robot import *
 
 # zone_id 조회
 async def fetch_parking_zone_info(rfid: str, zone_name: str) -> Optional[int]:
     query = """
         SELECT 
         id,
-        zone_type
+        zone_type,
+        name
         FROM parking_zones
         WHERE rfid_tag = :rfid AND name = :zone_name
     """
     result = await database.fetch_one(query, {"rfid": rfid, "zone_name": zone_name})
     if result:
-        return result["id"], result["zone_type"]
-    return None, None
+        return result["id"], result["zone_type"], result["name"]
+    return None, None, None
 
 # zone_type 조회
 async def fetch_zone_type(zone_id: int) -> Optional[str]:
@@ -67,15 +69,16 @@ async def save_alert_log(zone_id: int, plate_text: str, reason: str):
     })
 
 # robot_log 저장
-async def save_robot_log(zone_id: int, robot_id: int, rfid_tag: str, plate_text: str):
+async def save_robot_log(zone_id: int, robot_id: int, rfid_tag: str, zone_name: str, plate_text: str):
     query = """
-        INSERT INTO robot_logs (zone_id, robot_id, rfid_tag, plate_text, created_at)
-        VALUES (:zone_id, :robot_id, :rfid_tag, :plate_text, CURRENT_TIMESTAMP)
+        INSERT INTO robot_logs (zone_id, robot_id, rfid_tag, zone_name, plate_text, created_at)
+        VALUES (:zone_id, :robot_id, :rfid_tag, :zone_name, :plate_text, CURRENT_TIMESTAMP)
     """
     await database.execute(query, {
         "zone_id": zone_id,
         "robot_id": robot_id,
         "rfid_tag": rfid_tag,
+        "zone_name": zone_name,
         "plate_text": plate_text
     })
 
@@ -93,3 +96,46 @@ async def fetch_robot_log(robot_id: int):
         LIMIT 1
     """
     return await database.fetch_one(query, {"robot_id": robot_id})
+
+
+async def fetch_vehicle_locations_by_rfid():
+    query = """
+        SELECT 
+            rl.rfid_tag,
+            rl.zone_name,
+            rl.plate_text,
+            rv.car_type
+        FROM robot_logs rl
+        INNER JOIN (
+            SELECT 
+                rfid_tag,
+                zone_name,
+                MAX(created_at) AS max_created_at
+            FROM robot_logs
+            GROUP BY rfid_tag, zone_name
+        ) grouped
+            ON rl.rfid_tag <=> grouped.rfid_tag
+        AND rl.zone_name <=> grouped.zone_name
+        AND rl.created_at = grouped.max_created_at
+        LEFT JOIN registered_vehicles rv
+            ON rl.plate_text = rv.plate_text
+    """
+    rows = await database.fetch_all(query)
+
+    result: Dict[str, Optional[List[VehicleLocation]]] = {}
+
+    for row in rows:
+        rfid = row["rfid_tag"]
+        location = VehicleLocation(
+            name=row["zone_name"],
+            plate_text=row["plate_text"],
+            car_type=row["car_type"]
+        )
+
+        if rfid not in result:
+            result[rfid] = []
+
+        result[rfid].append(location)
+
+    return result
+
