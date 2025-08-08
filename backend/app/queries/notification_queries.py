@@ -8,17 +8,22 @@ logger.setLevel(logging.INFO)  # INFO 이상 출력
 async def fetch_alert_logs(order: str) -> List[dict]:
     query = f"""
         SELECT 
-        alert_logs.id,
-        alert_logs.created_at,  
+        max(alert_logs.id) as id,
+        max(alert_logs.created_at) as created_at,  
         alert_logs.plate_text, 
         alert_logs.reason,
-        alert_logs.is_checked,
+        max(alert_logs.is_checked) as is_checked,
         parking_zones.name,
         parking_zones.floor
         FROM alert_logs
         LEFT JOIN parking_zones ON alert_logs.zone_id = parking_zones.id
         WHERE alert_logs.deleted_at IS NULL
         AND parking_zones.deleted_at IS NULL
+        GROUP BY 
+            alert_logs.plate_text, 
+            alert_logs.reason,
+            parking_zones.name,
+            parking_zones.floor
         ORDER BY alert_logs.created_at {order}
     """
     
