@@ -1,0 +1,44 @@
+base:
+- base/base.yaml
+
+preprocessing:
+  network_type: ocr
+  meta_arch: lprnet
+
+quantization:
+  # 중요: 양자화에 사용할 보정용 데이터셋(npz) 경로를 지정해야 합니다.
+  calib_set: ["path/to/your/calibration_data.npz"] 
+
+network:
+  network_name: lprnet_hangul_custom
+
+paths:
+  alls_script: lprnet.alls
+  # 중요: 직접 생성한 ONNX 파일 경로를 지정해야 합니다.
+  network_path:
+  - ./weights/lprnet_hailo_best.onnx 
+
+parser:
+  # 우리 코드와 일치하는 정규화 파라미터
+  normalization_params:
+    normalize_in_net: true
+    mean_list: [127.5, 127.5, 127.5]
+    std_list:  [128.0, 128.0, 128.0]
+
+evaluation:
+  infer_type: np_infer
+  labels_offset: 0
+  # 중요: 클래스 수를 우리 모델에 맞게 수정
+  classes: 53 
+  dataset_name: lp_ocr_custom
+  data_set: null # 평가에 사용할 데이터셋 경로 (필요시 지정)
+
+info:
+  task: license plate recognition # 작업 내용 수정
+  # 중요: 입출력 Shape을 우리 모델에 맞게 수정
+  input_shape: 75x300x3
+  output_shape: 53x2x19 # PyTorch의 (C, H, W) 순서에 따름
+  operations: # 이 값들은 Hailo Profiler 실행 후 채울 수 있습니다.
+  parameters: # 
+  framework: pytorch
+  eval_metric: Accuracy
