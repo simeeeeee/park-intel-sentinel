@@ -1,0 +1,7 @@
+{
+    "bird": 0,
+    "monkey": 1,
+    "dog": 2,
+    "cat": 3,
+    "snake": 4,
+}
